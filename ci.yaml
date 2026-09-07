@@ -1,0 +1,25 @@
+resources:
+  repositories:
+    - repository: templates
+      type: git
+      name: equipo-DevOps/java
+      ref: java-custom
+
+trigger:
+  branches:
+    include:
+      - develop
+      - refs/tags/*.*.*-candidate-*
+      - refs/tags/*.*.*-release-*
+
+pool:
+  name: Azure Pipelines
+  vmImage: 'ubuntu-latest'
+  demands:
+    - maven
+    - java
+    
+stages:
+- template: stages.yaml@templates
+  parameters:
+   versionJava: 21

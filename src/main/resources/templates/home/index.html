@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymleaf.org">
+<head>
+    <title th:text="${pageTitle}">Intercorp Retail</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+
+<div class="container">
+    <h2>Welcome to Intercorp Retail Microservice Page</h2>
+    <hr/>
+    <p>Application : <span style="color: blue;" th:utext="${appName}"></span></p>
+    <p>Environment: <span style="color: blue;" th:utext="${environment}"></span></p>
+    <p>Image Tag: <span style="color: blue;" th:utext="${imageTag}"></span></p>
+    <p>See swagger page : <a href="/swagger-ui.html">click here</a></p>
+</div>
+
+</body>
+</html>

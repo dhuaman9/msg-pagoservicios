@@ -1,0 +1,99 @@
+{
+  "id" : "Transaction",
+  "type" : "array",
+  "properties" : {
+    "TransactionEvent" : {
+      "type" : "array",
+      "items" : {
+        "name" : "TransactionEvent",
+        "javaInterfaces" : [ "pe.financiera.framework.pubsub.messaging.Message<Body>" ],
+        "type" : "object",
+        "properties" : {
+          "header" : {
+            "type" : "object",
+            "existingJavaType" : "pe.financiera.framework.event.base.message.third.party.Header"
+          },
+          "body" : {
+            "$ref" : "#/properties/Body"
+          },
+          "error" : {
+            "type" : "object",
+            "existingJavaType" : "pe.financiera.framework.event.base.message.third.party.Error"
+          },
+          "customProperties" : {
+            "type" : "object",
+            "existingJavaType" : "java.util.Map<String,Object>"
+          }
+        }
+      }
+    },
+    "Body" : {
+      "type" : "object",
+      "properties" : {
+        "operationId" : {
+          "type" : "string"
+        },
+        "transactionId" : {
+          "type" : "string"
+        },
+        "operationNumber" : {
+          "type" : "string"
+        },
+        "transferType" : {
+          "type" : "string"
+        },
+        "currencyType" : {
+          "type" : "string"
+        },
+        "transferAmount" : {
+          "type" : "number"
+        },
+        "contract" : {
+          "type" : "string"
+        },
+        "tokenTunki" : {
+          "type" : "string"
+        },
+        "extractNumber" : {
+          "type" : "integer"
+        },
+        "movementNumber" : {
+          "type" : "integer"
+        },
+        "referenceNumber" : {
+          "type" : "string"
+        },
+        "documentNumber" : {
+          "type" : "string"
+        },
+        "documentType" : {
+          "type" : "string"
+        },
+        "sourceType": {
+          "type" : "string"
+        },
+        "userId" : {
+          "type" : "string"
+        },
+        "creationDate" : {
+          "type" : "string"
+        },
+        "dynamicTopic" : {
+          "type" : "string"
+        },
+        "result" : {
+          "type" : "boolean"
+        }
+      }
+    },
+    "IncorporateEventTagEnum" : {
+      "type" : "array",
+      "items" : {
+        "name" : "IncorporateEventTagEnum",
+        "type" : "string",
+        "enum" : [ "STARTED", "IN_PROGRESS", "COMPLETED", "FAILED" ],
+        "javaEnumNames" : [ "STARTED", "IN_PROGRESS", "COMPLETED", "FAILED" ]
+      }
+    }
+  }
+}

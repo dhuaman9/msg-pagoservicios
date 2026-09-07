@@ -1,0 +1,152 @@
+appName: gwpagoservicios
+
+server:
+  port: 8080
+  servlet:
+    context-path: /gwpagoservicios
+  compression:
+    enabled: true
+    mime-types: application/json
+    min-response-size: 1024
+
+spring:
+  config:
+    import: "optional:configtree:/mnt/secrets/"
+  application:
+    name: gwpagoservicios
+
+logging:
+  level:
+    ROOT: INFO
+
+management:
+  health:
+    rabbit:
+      enabled: false
+  endpoint:
+    shutdown:
+      enabled: true
+    health:
+      show-details: always
+      enabled: true
+    metrics:
+      enabled: true
+    info:
+      enabled: true
+    env:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+  metrics:
+    tags:
+      application: gwpagoservicios
+
+application:
+  pagination:
+    page:
+      size-default: 10
+      number-default: 0
+
+# framework-logging (financieraoh)
+framework:
+  logging:
+    output: ${LOG_OUTPUT_SERVICE}
+    level: ${LOG_LEVEL_SERVICE}
+
+# logbook: logging de request/response HTTP entrante
+logbook:
+  format.style: json
+  include[0]: '**/v1/**'
+  exclude[0]: '**/v2/api-docs'
+  exclude[1]: '**/swagger-ui/index.html'
+  exclude[2]: '**/webjars/**'
+  exclude[3]: '**/swagger-resources/**'
+  exclude[4]: '**/csrf'
+  exclude[5]: '**/'
+  exclude[6]: '**/error'
+  exclude[7]: '**/actuator/**'
+  filter.enabled: true
+  secure-filter.enabled: true
+  obfuscate:
+    headers:
+      - Authorization
+      - X-Secret
+    parameters:
+      - access_token
+      - password
+  write:
+    level: INFO
+    category: elk-data
+    max-body-size: 100
+
+# Swagger / OpenAPI (springdoc)
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /index.html
+    enabled: true
+  packages-to-scan: pe.financiera.gw.pagoservicios
+
+redis:
+  host: ${REDIS_HOST}
+  port: ${REDIS_PORT}
+
+gcp:
+  credentials: ${GCP_CREDENTIALS}
+  project-id: ${GCP_PROJECT_ID}
+
+queue:
+  sp:
+    check:
+      bill:
+        status:
+          v2:
+            subscription:
+              name: service-payment-check-bill-status-v2-subscription
+              max-ack-extension-period: ${CHECK_BILL_STATUS_ACK_EXTENSION:20}
+              deduplication-lock-ttl: ${CHECK_BILL_STATUS_LOCK_TTL:9}
+              key-ttl: ${CHECK_BILL_STATUS_KEY_TTL:18}
+              max-retries: ${CHECK_BILL_STATUS_MAX_RETRY:5}
+  check:
+    bill:
+      status:
+        subscription:
+          max-retries: ${CHECK_BILL_STATUS_MAX_RETRY:3}
+          retry-wait-time: ${CHECK_BILL_STATUS_RETRY_WAIT_TIME:180}
+  publisher:
+    payment:
+      service:
+        check:
+          bill:
+            status:
+              v2: service-payment-check-bill-status-v2-publish
+        bill-completed:
+          v2: service-payment-bill-completed-v2-publish
+  dead:
+    letter:
+      publish:
+        name: event-messaging-dead-letter-queue-publish
+
+check:
+  bill:
+    status:
+      timeout: ${CHECK_BILL_STATUS_TIMEOUT:120}
+
+# Integración Interbank (Open Banking)
+services-api:
+  interbank:
+    access:
+      applicationId: ${OPENBANKING_APPLICATION_ID}
+      password: ${OPENBANKING_PASSWORD}
+      grant-type: ${OPENBANKING_GRANT_TYPE}
+      subscriptionKey:
+        billing: ${OPENBANKING_BILLING_SUBSCRIPTION_KEY}
+    api:
+      baseUrl: ${OPENBANKING_URL}
+      connectTimeout: 100
+      readTimeout: 100
+      writeTimeout: 100
+      maxRequest: 100

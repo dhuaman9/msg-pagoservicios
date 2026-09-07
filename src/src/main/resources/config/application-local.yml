@@ -1,0 +1,25 @@
+server:
+  port: 8080
+
+redis:
+  host: localhost
+  port: 6379
+
+gcp:
+  credentials: false
+  project-id: local-project
+
+services-api:
+  interbank:
+    access:
+      applicationId: "local-app-id"
+      password: "local-pass"
+      grant-type: "client_credentials"
+      subscriptionKey:
+        billing: "local-sub-key"
+    api:
+      baseUrl: "https://api-sandbox.interbank.pe"
+      connectTimeout: 5000
+      readTimeout: 5000
+      writeTimeout: 5000
+      maxRequest: 100

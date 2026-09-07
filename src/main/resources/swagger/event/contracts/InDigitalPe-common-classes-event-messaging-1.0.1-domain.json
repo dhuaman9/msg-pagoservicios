@@ -1,0 +1,88 @@
+{
+  "id": "events",
+  "type": "array",
+  "properties": {
+    "CommandTriggerEnum": {
+      "type": "array",
+      "items": {
+        "name": "CommandTriggerEnum",
+        "type": "object",
+        "enum": [
+          "TransferP2P",
+          "TransferP2C",
+          "TransferC2P",
+          "AccountCreation",
+          "AdditionalCard",
+          "ServicePayment",
+          "RetailRecharge",
+          "Disbursement",
+          "PagoEfectivoPayment",
+          "BenefitRecharge"
+        ],
+        "javaEnumNames": [
+          "TRANSFER_P2P",
+          "TRANSFER_P2C",
+          "TRANSFER_C2P",
+          "ACCOUNT_CREATION",
+          "ADDITIONAL_CARD",
+          "SERVICE_PAYMENT",
+          "RETAIL_RECHARGE",
+          "DISBURSEMENT",
+          "PAGOEFECTIVO_PAYMENT",
+          "BENEFIT_RECHARGE"
+        ]
+      }
+    },
+    "TransferTypeEnum": {
+      "type": "array",
+      "items": {
+        "name": "TransferTypeEnum",
+        "type": "number",
+        "enum": [
+          1,
+          2,
+          3
+        ],
+        "javaEnumNames": [
+          "TRANSFER",
+          "CASH_IN",
+          "CASH_OUT"
+        ]
+      }
+    },
+    "CurrencyTypeEnum": {
+      "type": "array",
+      "items": {
+        "name": "CurrencyTypeEnum",
+        "type": "object",
+        "enum": [
+          "PEN",
+          "USD"
+        ],
+        "javaEnumNames": [
+          "PEN",
+          "USD"
+        ]
+      }
+    },
+    "EventTagEnum": {
+      "type": "array",
+      "items": {
+        "name": "EventTagEnum",
+        "type": "number",
+        "enum": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "javaEnumNames": [
+          "IN_PROGRESS",
+          "PROCESSED",
+          "COMPLETED",
+          "FAILED"
+        ]
+      }
+    }
+  }
+}

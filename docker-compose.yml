@@ -1,0 +1,54 @@
+# Infra local mínima para gwpagoservicios
+# Levantar con:  docker compose up -d
+# Luego correr el servicio con el emulador Pub/Sub y Redis apuntando a localhost:
+
+services:
+
+  # --------- Redis (dedup + caché) ---------
+  cache:
+    image: redis:7
+    restart: always
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+
+  # --------- Emulador de Google Pub/Sub ---------
+  pubsub:
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk:emulators
+    restart: always
+    command: >
+      gcloud beta emulators pubsub start
+      --host-port=0.0.0.0:8085
+      --project=local-project
+    ports:
+      - '8085:8085'
+
+  # --------- Init: crea topics y subscriptions requeridos por gwpagoservicios ---------
+  pubsub-init:
+    image: curlimages/curl:latest
+    depends_on:
+      - pubsub
+    restart: "no"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "Esperando al emulador Pub/Sub..."
+        until curl -s http://pubsub:8085/v1/projects/local-project/topics >/dev/null; do sleep 1; done
+        echo "Emulador listo. Creando topics..."
+
+        # Topics de publicación definidos en tu yaml
+        curl -s -X PUT http://pubsub:8085/v1/projects/local-project/topics/service-payment-check-bill-status-v2-publish
+        curl -s -X PUT http://pubsub:8085/v1/projects/local-project/topics/service-payment-bill-completed-v2-publish
+        curl -s -X PUT http://pubsub:8085/v1/projects/local-project/topics/event-messaging-dead-letter-queue-publish
+
+        echo "Creando subscriptions..."
+        # Subscriptions definidas en tu yaml para que el listener las consuma localmente
+        curl -s -X PUT http://pubsub:8085/v1/projects/local-project/subscriptions/service-payment-check-bill-status-v2-subscription \
+          -H "Content-Type: application/json" \
+          -d '{"topic":"projects/local-project/topics/service-payment-check-bill-status-v2-publish","ackDeadlineSeconds":30}'
+
+        echo "Topics y subscriptions locales creados exitosamente."
+
+volumes:
+  redis_data:
