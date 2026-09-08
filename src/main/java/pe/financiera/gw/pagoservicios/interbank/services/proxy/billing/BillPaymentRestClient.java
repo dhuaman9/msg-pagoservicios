@@ -1,5 +1,6 @@
 package pe.financiera.gw.pagoservicios.interbank.services.proxy.billing;
 
+import pe.financiera.gw.pagoservicios.interbank.services.proxy.billing.request.BillPaymentRequest;
 import pe.financiera.gw.pagoservicios.interbank.services.proxy.billing.response.GetBillResponse;
 import retrofit2.Call;
 import retrofit2.http.*;
@@ -30,4 +31,18 @@ public interface BillPaymentRestClient {
         @Path("serviceId") String serviceId,
         @Query("clientId") String clientId
     );
+
+    @POST("/billpayments/v1/recipients/{recipientsId}/services/{serviceId}/payments")
+    Call<Void> payDirectBilling(
+        @Header(SUBSCRIPTION_KEY) String subscriptionKey,
+        @Header(CORRELATION_ID) String correlationId,
+        @Header(API_FORCE_SYNC) boolean forceSync,
+        @Header(AUTH) String auth,
+        @Path("recipientsId") String recipientsId,
+        @Path("serviceId") String serviceId,
+        @Body BillPaymentRequest billPaymentRequest
+    );
+
+
+
 }

@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import pe.financiera.gw.pagoservicios.interbank.business.domain.BillList;
+import pe.financiera.gw.pagoservicios.interbank.business.domain.DirectPaymentV2;
 import pe.financiera.gw.pagoservicios.interbank.business.domain.PaymentV2;
 import pe.financiera.gw.pagoservicios.interbank.business.input.BillPaymentService;
 import pe.financiera.gw.pagoservicios.interbank.controller.dto.BillsApiResponse;
@@ -81,4 +82,39 @@ public class ServicesPaymentController {
         BillList billList = billPaymentService.getBills(clientId, recipientId, serviceId);
         return billsApiMapper.toApiResponse(billList);
     }
+
+    @Operation(summary = "Confirmar pago directo de factura V2")
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Pago directo recibido y encolado para procesamiento"
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Solicitud inválida",
+            content = @Content(
+                schema = @Schema(implementation = ApiErrorResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "502",
+            description = "Error retornado por Interbank",
+            content = @Content(
+                schema = @Schema(implementation = ApiErrorResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Error interno del gateway",
+            content = @Content(
+                schema = @Schema(implementation = ApiErrorResponse.class)
+            )
+        )
+    })
+    @PostMapping("/v2/billing/direct")
+    public void makeDirectBillPaymentV2(@RequestBody DirectPaymentV2 directPayment) throws IOException, RestClientException, InterbankApiException {
+        log.info("{}_CONFIRMATION_STEP_4.9.2_REQUEST_RECEIVED: correlationId={} recipientId={}", LOG_PREFIX, directPayment.getCorrelationId(), directPayment.getRecipientId());
+        billPaymentService.makeDirectPaymentV2(directPayment);
+    }
+
 }

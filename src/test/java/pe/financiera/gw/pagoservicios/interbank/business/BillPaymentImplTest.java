@@ -16,6 +16,8 @@ import pe.financiera.gw.pagoservicios.interbank.business.output.CheckBillStatusP
 import pe.financiera.gw.pagoservicios.interbank.event.message.third.party.TransactionEvent;
 import pe.financiera.gw.pagoservicios.queue.service.payment.CheckBillStatusRestParser;
 import pe.financiera.gw.pagoservicios.util.exception.interbank.InterbankApiException;
+import pe.financiera.gw.pagoservicios.interbank.business.domain.DirectPayment;
+import pe.financiera.gw.pagoservicios.interbank.business.domain.DirectPaymentV2;
 
 import java.util.Collections;
 
@@ -47,6 +49,9 @@ class BillPaymentImplTest {
 
     private PaymentV2 paymentV2;
 
+    private DirectPaymentV2 directPaymentV2;
+
+
     @BeforeEach
     void setUp() {
         billPaymentImpl = new BillPaymentImpl(billPaymentPort, checkBillStatusRestParser, checkBillStatusPublisherPort);
@@ -61,6 +66,14 @@ class BillPaymentImplTest {
             .correlationId("123456")
             .clientId("987123456")
             .build();
+
+        directPaymentV2 = DirectPaymentV2.builder()
+            .recipientId("01006")
+            .serviceId("01")
+            .correlationId("123456")
+            .clientId("987123456")
+            .build();
+
     }
 
     @Test
@@ -118,4 +131,48 @@ class BillPaymentImplTest {
         assertEquals("A1580040", result.getClient().getId());
         verify(billPaymentPort, times(1)).getBillList("987123456", "01006", "01");
     }
+
+    @Test
+    void makeDirectPaymentV2_shouldMakeDirectPaymentAndPublishCheckStatus() throws Exception {
+        DirectPayment directPayment = DirectPayment.builder().clientId("987123456").build();
+        TransactionEvent event = new TransactionEvent();
+        when(checkBillStatusRestParser.toDirectPayment(directPaymentV2)).thenReturn(directPayment);
+        when(checkBillStatusRestParser.toDirectTransactionEvent(directPaymentV2, 120, 3, 180)).thenReturn(event);
+
+        billPaymentImpl.makeDirectPaymentV2(directPaymentV2);
+
+        verify(billPaymentPort, times(1)).makeDirectPayment(directPayment);
+        verify(checkBillStatusPublisherPort, times(1)).publish(event);
+
+    }
+
+    @Test
+    void makeDirectPaymentV2_shouldPropagateInterbankApiExceptionWithoutPublishing() throws Exception {
+        InterbankApiException expected = new InterbankApiException(
+            "07.01.03", "DirectPaymentFailed", HttpStatus.BAD_GATEWAY);
+        when(checkBillStatusRestParser.toDirectPayment(directPaymentV2))
+            .thenReturn(DirectPayment.builder().build());
+        doThrow(expected).when(billPaymentPort).makeDirectPayment(any());
+
+        InterbankApiException thrown = assertThrows(InterbankApiException.class,
+            () -> billPaymentImpl.makeDirectPaymentV2(directPaymentV2));
+
+        assertSame(expected, thrown);
+        verify(checkBillStatusPublisherPort, never()).publish(any());
+    }
+
+    @Test
+    void makeDirectPaymentV2_shouldPropagateUnexpectedExceptionWithoutWrapping() throws Exception {
+        DirectPayment directPayment = DirectPayment.builder().build();
+        TransactionEvent event = new TransactionEvent();
+        when(checkBillStatusRestParser.toDirectPayment(directPaymentV2)).thenReturn(directPayment);
+        when(checkBillStatusRestParser.toDirectTransactionEvent(any(), anyInt(), anyInt(), anyInt())).thenReturn(event);
+        doThrow(new IllegalStateException("pubsub down")).when(checkBillStatusPublisherPort).publish(event);
+
+        assertThrows(IllegalStateException.class, () -> billPaymentImpl.makeDirectPaymentV2(directPaymentV2));
+
+        verify(billPaymentPort, times(1)).makeDirectPayment(directPayment);
+    }
+
+
 }

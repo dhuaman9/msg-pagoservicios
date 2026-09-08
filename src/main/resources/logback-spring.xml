@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="true">
+    <contextListener class="pe.financieraoh.framework.logging.config.LoggingFrameworkConfig"/>
+    <springProperty scope="context" name="servicio" source="spring.application.name"/>
+    <springProperty name="LOG_OUTPUT" source="framework.logging.output" defaultValue="CONSOLE"/>
+    <springProperty name="LOG_LEVEL" source="framework.logging.level" defaultValue="INFO"/>
+    <condition class="ch.qos.logback.core.boolex.PropertyEqualityCondition">
+        <key>LOG_OUTPUT</key>
+        <value>CONSOLE</value>
+    </condition>
+    <if>
+        <then>
+            <appender name="CONSOLE"
+                      class="ch.qos.logback.core.ConsoleAppender">
+                <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+            </appender>
+            <root level="${LOG_LEVEL}">
+                <appender-ref ref="CONSOLE" />
+            </root>
+        </then>
+        <else>
+            <appender name="AMQP"
+                      class="org.springframework.amqp.rabbit.logback.AmqpAppender">
+                <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+                <routingKeyPattern>logstash</routingKeyPattern>
+                <exchangeName>financieraoh-logging-exchange</exchangeName>
+                <host>${RABBITMQ_TRANSACTION_HOST}</host>
+                <port>${RABBITMQ_TRANSACTION_PORT}</port>
+                <username>${RABBITMQ_TRANSACTION_USR}</username>
+                <password>${RABBITMQ_TRANSACTION_PWD}</password>
+                <applicationId>api-logging-service</applicationId>
+                <declareExchange>true</declareExchange>
+                <exchangeType>direct</exchangeType>
+                <generateId>true</generateId>
+                <charset>UTF-8</charset>
+                <durable>true</durable>
+                <deliveryMode>PERSISTENT</deliveryMode>
+            </appender>
+            <root level="${LOG_LEVEL}">
+                <appender-ref ref="AMQP" />
+            </root>
+        </else>
+    </if>
+</configuration>

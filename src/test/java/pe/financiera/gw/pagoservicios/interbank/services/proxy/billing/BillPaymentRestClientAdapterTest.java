@@ -31,6 +31,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static pe.financiera.gw.pagoservicios.util.constants.OpenBankingConstans.BILLING;
+import pe.financiera.gw.pagoservicios.interbank.business.domain.DirectPayment;
 
 @ExtendWith(MockitoExtension.class)
 public class BillPaymentRestClientAdapterTest {
@@ -64,6 +65,8 @@ public class BillPaymentRestClientAdapterTest {
 
     private String subscriptionKey = "subscriptionKey";
 
+    private DirectPayment directPayment;
+
 
     @BeforeEach
     public void init() {
@@ -89,6 +92,16 @@ public class BillPaymentRestClientAdapterTest {
         billResponsesList = new ArrayList<>();
         getBillResponse = new GetBillResponse();
         getBillResponse.setBills(billResponsesList);
+
+        directPayment = DirectPayment.builder()
+            .recipientId("01006")
+            .serviceId("01")
+            .correlationId("123456")
+            .clientId("987123456")
+            .currency("PEN")
+            .amount("91.42")
+            .build();
+
     }
 
     @Test
@@ -175,4 +188,40 @@ public class BillPaymentRestClientAdapterTest {
         verify(interbankAuthorizationManager, times(1)).getOpenBankingAccess();
         verify(billPaymentRestClient, times(1)).payBilling(any(), any(), anyBoolean(), any(), any(), any(), any());
     }
+
+    @Test
+    public void makeDirectPayment_Should_Throw_Exception_WhenAccessIsNotPresent() throws Exception {
+        when(interbankAuthorizationManager.getOpenBankingAccess()).thenReturn(Optional.empty());
+        assertThrows(RestClientException.class, () -> billPaymentRestClientAdapter.makeDirectPayment(directPayment));
+    }
+
+    @Test
+    public void makeDirectPayment_ShouldSucceed_WhenValidData() throws Exception {
+        doNothing().when(interbankRetrofitErrorHandler).ensureSuccessful(any(), eq(BillPaymentRestClientAdapter.class));
+        when(openBankingAccessParameters.getSubscriptionKeyOf(BILLING)).thenReturn(subscriptionKey);
+        when(interbankAuthorizationManager.getOpenBankingAccess()).thenReturn(Optional.of(access));
+        when(billPaymentRestClient.payDirectBilling(any(), any(), anyBoolean(), any(), any(), any(), any())).thenReturn(Calls.response((Void) null));
+
+        billPaymentRestClientAdapter.makeDirectPayment(directPayment);
+
+        verify(openBankingAccessParameters, times(1)).getSubscriptionKeyOf(BILLING);
+        verify(interbankAuthorizationManager, times(1)).getOpenBankingAccess();
+        verify(billPaymentRestClient, times(1)).payDirectBilling(any(), any(), anyBoolean(), any(), any(), any(), any());
+    }
+
+    @Test
+    public void makeDirectPayment_ShouldThrowRestClientException_WhenRestClientFails() throws Exception {
+        when(openBankingAccessParameters.getSubscriptionKeyOf(BILLING)).thenReturn(subscriptionKey);
+        when(interbankAuthorizationManager.getOpenBankingAccess()).thenReturn(Optional.of(access));
+        when(billPaymentRestClient.payDirectBilling(any(), any(), anyBoolean(), any(), any(), any(), any()))
+            .thenReturn(Calls.response(Response.error(400, ResponseBody.create(null, "Error de comunicacion"))));
+        doAnswer(invocation -> {
+            throw new RestClientException(new IOException(), BillPaymentRestClientAdapter.class.getName(), "Error de comunicacion");
+        }).when(interbankRetrofitErrorHandler).ensureSuccessful(any(), eq(BillPaymentRestClientAdapter.class));
+
+        assertThrows(RestClientException.class, () -> billPaymentRestClientAdapter.makeDirectPayment(directPayment));
+        verify(billPaymentRestClient, times(1)).payDirectBilling(any(), any(), anyBoolean(), any(), any(), any(), any());
+    }
+
+
 }

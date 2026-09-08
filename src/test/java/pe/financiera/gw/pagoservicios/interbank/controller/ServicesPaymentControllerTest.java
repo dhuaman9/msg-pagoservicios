@@ -7,6 +7,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pe.financiera.gw.pagoservicios.interbank.business.domain.BillList;
+import pe.financiera.gw.pagoservicios.interbank.business.domain.DirectPaymentV2;
 import pe.financiera.gw.pagoservicios.interbank.business.domain.PaymentV2;
 import pe.financiera.gw.pagoservicios.interbank.business.input.BillPaymentService;
 import pe.financiera.gw.pagoservicios.interbank.controller.dto.BillsApiResponse;
@@ -60,4 +61,32 @@ public class ServicesPaymentControllerTest {
         verify(billPaymentService, times(1)).getBills(anyString(), anyString(), anyString());
         verify(billsApiMapper, times(1)).toApiResponse(billList);
     }
+
+    @Test
+    public void makeDirectBillPaymentV2Test() throws IOException, RestClientException, InterbankApiException {
+        DirectPaymentV2 directPayment = DirectPaymentV2.builder()
+            .recipientId("01006")
+            .serviceId("01")
+            .correlationId("123456")
+            .clientId("987123456")
+            .build();
+
+        doNothing().when(billPaymentService).makeDirectPaymentV2(any());
+        servicesPaymentController.makeDirectBillPaymentV2(directPayment);
+        verify(billPaymentService, times(1)).makeDirectPaymentV2(any());
+    }
+
+    @Test
+    public void makeDirectBillPaymentV2Test_shouldPropagateInterbankApiException() throws IOException, RestClientException, InterbankApiException {
+        DirectPaymentV2 directPayment = DirectPaymentV2.builder().correlationId("123456").build();
+        doThrow(new InterbankApiException("07.01.03", "BillNotFoundException", org.springframework.http.HttpStatus.NOT_FOUND))
+            .when(billPaymentService).makeDirectPaymentV2(any());
+
+        org.junit.jupiter.api.Assertions.assertThrows(InterbankApiException.class,
+            () -> servicesPaymentController.makeDirectBillPaymentV2(directPayment));
+    }
+
+
+
+
 }

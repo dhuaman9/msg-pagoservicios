@@ -13,4 +13,7 @@ public class ApplicationConstants {
     public static final String TTL_TIMESTAMP = "ttl_timestamp";
 
     public static final ZoneId LIMA_ZONE = ZoneId.of("America/Lima");
+
+    public static final String ZONE_ID_LIMA = "America/Lima";
+
 }

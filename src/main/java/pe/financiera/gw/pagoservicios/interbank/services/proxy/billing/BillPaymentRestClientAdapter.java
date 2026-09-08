@@ -4,9 +4,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import pe.financiera.gw.pagoservicios.config.interbank.OpenBankingAccessParameters;
 import pe.financiera.gw.pagoservicios.interbank.business.domain.BillList;
+import pe.financiera.gw.pagoservicios.interbank.business.domain.DirectPayment;
 import pe.financiera.gw.pagoservicios.interbank.business.domain.OpenBankingAccess;
 import pe.financiera.gw.pagoservicios.interbank.business.domain.Payment;
 import pe.financiera.gw.pagoservicios.interbank.business.output.BillPaymentPort;
+import pe.financiera.gw.pagoservicios.interbank.services.proxy.billing.request.BillPaymentRequest;
+import pe.financiera.gw.pagoservicios.interbank.services.proxy.billing.request.ClientRequest;
+import pe.financiera.gw.pagoservicios.interbank.services.proxy.billing.request.PaymentRequest;
 import pe.financiera.gw.pagoservicios.interbank.services.proxy.billing.response.GetBillResponse;
 import pe.financiera.gw.pagoservicios.interbank.services.proxy.error.InterbankRetrofitErrorHandler;
 import pe.financiera.gw.pagoservicios.util.authorization.InterbankAuthorizationManager;
@@ -26,6 +30,8 @@ public class BillPaymentRestClientAdapter implements BillPaymentPort {
     private static final String LOG_PREFIX = "GW_SERVICE_PAY";
     private static final String MISSING_JWT = "Missing jwt";
     private final BillPaymentRestClient billPaymentRestClient;
+
+
     private final OpenBankingAccessParameters openBankingAccessParameters;
     private final InterbankAuthorizationManager interbankAuthorizationManager;
     private final BillPaymentRestParser billPaymentRestParser;
@@ -96,4 +102,38 @@ public class BillPaymentRestClientAdapter implements BillPaymentPort {
         interbankRetrofitErrorHandler.ensureSuccessful(response, BillPaymentRestClientAdapter.class);
         return billPaymentRestParser.toBillList(response.body());
     }
+
+    @Override
+    public void makeDirectPayment(DirectPayment directPayment) throws IOException, RestClientException, InterbankApiException {
+        final String subscriptionKey = openBankingAccessParameters.getSubscriptionKeyOf(APPLICATION);
+        Optional<OpenBankingAccess> openBankingAccessOptional = interbankAuthorizationManager.getOpenBankingAccess();
+        if (!openBankingAccessOptional.isPresent()) {
+            throw new RestClientException(
+                new RuntimeException(MISSING_JWT),
+                BillPaymentRestClientAdapter.class.getName(),
+                MISSING_JWT
+            );
+        }
+        OpenBankingAccess openBankingAccess = openBankingAccessOptional.get();
+        BillPaymentRequest request = BillPaymentRequest.builder().
+            payment(PaymentRequest.builder()
+                .client(ClientRequest.builder()
+                    .id(directPayment.getClientId())
+                    .build())
+                .amount(directPayment.getAmount())
+                .currency(directPayment.getCurrency())
+                .build())
+            .build();
+        Response<Void> response = billPaymentRestClient.payDirectBilling(
+            subscriptionKey,
+            directPayment.getCorrelationId(),
+            false,
+            openBankingAccess.getAuthorization(),
+            directPayment.getRecipientId(),
+            directPayment.getServiceId(),
+            request
+        ).execute();
+        interbankRetrofitErrorHandler.ensureSuccessful(response, BillPaymentRestClientAdapter.class);
+    }
+
 }
